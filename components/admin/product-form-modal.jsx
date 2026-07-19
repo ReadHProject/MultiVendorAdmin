@@ -68,6 +68,7 @@ const INITIAL_FORM = {
   maxOrderQty: "",
   initialStock: "0",
   customSku: "",
+  preGst: "",
 };
 
 export default function ProductFormModal({ open, onOpenChange, onCreated, editProduct }) {
@@ -98,6 +99,12 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
   const productTypes = productTypesData?.data || productTypesData || [];
   const categories = categoriesData?.data || categoriesData || [];
   const brands = brandsData?.data || brandsData || [];
+
+  const selectedProductTypeName = productTypes
+    .find((pt) => pt.id === form.productTypeId)?.name?.toLowerCase();
+    
+  const isJewelry = selectedProductTypeName === "jewelry" || selectedProductTypeName === "jewellery";
+  const isStandard = selectedProductTypeName === "cosmetics" || selectedProductTypeName === "cutlery";
 
   function flattenTree(nodes, depth = 0) {
     if (!Array.isArray(nodes)) return [];
@@ -144,6 +151,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
           maxOrderQty: String(editProduct.maxOrderQty ?? ""),
           initialStock: String(editProduct.initialStock ?? "0"),
           customSku: editProduct.customSku || "",
+          preGst: String(editProduct.preGst ?? ""),
         });
         setImages(
           editProduct.images?.length
@@ -214,6 +222,35 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
     });
   }
 
+  // Calculate pricing when MRP, discount, or tax changes for Cosmetics/Cutlery
+  useEffect(() => {
+    if (isStandard) {
+      const mrp = parseFloat(form.mrp) || 0;
+      const discount = parseFloat(form.discountPercent) || 0;
+      let gst = 0;
+      if (typeof form.taxPercent === 'string') {
+        gst = parseFloat(form.taxPercent.replace('%', '')) || 0;
+      } else {
+        gst = parseFloat(form.taxPercent) || 0;
+      }
+
+      if (mrp > 0) {
+        const purchasePrice = mrp - (mrp * discount) / 100;
+        const costPrice = purchasePrice / (1 + gst / 100);
+
+        const newPurchaseStr = purchasePrice.toFixed(2);
+        const newCostStr = costPrice.toFixed(2);
+
+        setForm((prev) => {
+          if (prev.purchasePrice !== newPurchaseStr || prev.preGst !== newCostStr) {
+            return { ...prev, purchasePrice: newPurchaseStr, preGst: newCostStr };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [form.mrp, form.discountPercent, form.taxPercent, isStandard]);
+
   async function handleCreateSubCategory() {
     if (!subCatName.trim()) {
       toast.error("Sub category name is required");
@@ -270,6 +307,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
         maxOrderQty: parseInt(form.maxOrderQty) || 0,
         initialStock: parseInt(form.initialStock) || 0,
         customSku: form.customSku || null,
+        preGst: parseFloat(form.preGst) || 0,
         image: images[0] || null,
         images: images,
         rolePrices: rolePricing,
@@ -304,7 +342,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
 
   return (
     <Dialog controlledOpen={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[92vh] p-0 gap-0 overflow-hidden rounded-lg grid-rows-[auto_1fr]">
+      <DialogContent className="w-[96vw] max-w-7xl h-[96vh] md:h-[auto] md:max-h-[96vh] p-0 gap-0 overflow-hidden rounded-lg grid-rows-[auto_1fr]">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-surface shrink-0">
           <div className="flex items-center gap-3">
@@ -330,7 +368,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
               type="button"
               onClick={handleCreate}
               disabled={creating}
-              className="bg-error text-white text-sm font-medium px-5 py-2 rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+              className="bg-primary text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
               {creating ? "Saving..." : "Save Product"}
@@ -342,7 +380,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
         <div className="flex flex-1 overflow-hidden min-h-0">
           {/* Side Navigation */}
           <div className="w-[200px] bg-muted/30 border-r border-border flex flex-col py-4 shrink-0 hidden sm:flex">
-            {SECTIONS.map((section) => {
+            {(isStandard ? SECTIONS : SECTIONS.filter(s => s.id === "general")).map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
               return (
@@ -374,7 +412,7 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                 e.preventDefault();
                 handleCreate();
               }}
-              className="space-y-8 max-w-3xl"
+              className="space-y-8 max-w-full"
             >
               {/* Section: General Info */}
               <section ref={(el) => (sectionRefs.current.general = el)}>
@@ -382,19 +420,6 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                   <Info className="h-4 w-4 text-muted-foreground" /> General Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                  {/* Product Name */}
-                  <div className="col-span-full">
-                    <Label className="text-sm font-medium text-foreground mb-1.5 block">
-                      Product Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => updateField("name", e.target.value)}
-                      placeholder="e.g. 24k Gold Necklace"
-                      className="mt-1"
-                      required
-                    />
-                  </div>
                   {/* Product Type */}
                   <div>
                     <div className="flex justify-between items-end mb-1.5">
@@ -406,7 +431,9 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                       label="Product Type"
                       value={form.productTypeId}
                       onChange={(val) => updateField("productTypeId", val)}
-                      options={productTypes.map((pt) => ({ id: pt.id, name: pt.name }))}
+                      options={productTypes
+                        .filter(pt => ["cosmetic", "cosmetics", "cutlery", "jewellery", "jewelry"].includes(pt.name?.toLowerCase()))
+                        .map((pt) => ({ id: pt.id, name: pt.name }))}
                       placeholder="Select Type..."
                       createMutation={createProductType}
                       createFields={[{ name: "name", label: "Type Name", type: "text", required: true }]}
@@ -415,6 +442,24 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                       Select Cosmetics, Jewellery, or Cutlery to display specific forms.
                     </p>
                   </div>
+                  {/* Product Name */}
+                  {(isStandard || isJewelry) && (
+                    <div>
+                      <Label className="text-sm font-medium text-foreground mb-1.5 block">
+                        {isJewelry ? "Actual Product Name" : "Product Name"} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        value={form.name}
+                        onChange={(e) => updateField("name", e.target.value)}
+                        placeholder={isJewelry ? "Actual Product Name" : "e.g. 24k Gold Necklace"}
+                        className="mt-1"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {isStandard && (
+                    <>
                   {/* Customer Type */}
                   <div>
                     <div className="flex justify-between items-end mb-1.5">
@@ -545,9 +590,67 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                       createFields={[{ name: "name", label: "Brand Name", type: "text", required: true }]}
                     />
                   </div>
+                  </>
+                  )}
+
+                  {isJewelry && (
+                    <>
+                      {/* Category */}
+                      <div className="col-span-full">
+                        <div className="flex justify-between items-end mb-1.5">
+                          <Label className="text-sm font-medium text-foreground">
+                            Category <span className="text-destructive">*</span>
+                          </Label>
+                        </div>
+                        <DropdownWithCreate
+                          label="Category"
+                          value={form.categoryId}
+                          onChange={(val) => updateField("categoryId", val)}
+                          options={rootCategories}
+                          placeholder="Select Category..."
+                          createMutation={createCategory}
+                          createFields={[{ name: "name", label: "Category Name", type: "text", required: true }]}
+                        />
+                      </div>
+                      {/* Barcode */}
+                      <div className="md:col-span-1">
+                        <Label className="text-sm font-medium text-foreground mb-1.5 block">Barcode (12-Digit Numeric)</Label>
+                        <BarcodeGenerator
+                          value={form.barcode}
+                          onChange={(val) => updateField("barcode", val)}
+                          variant="EAN13"
+                        />
+                      </div>
+                      {/* Min Stock */}
+                      <div className="md:col-span-1">
+                        <Label className="text-sm font-medium text-foreground mb-1.5 block">Min Stock (Remainder Limit)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={form.minOrderQty}
+                          onChange={(e) => updateField("minOrderQty", e.target.value)}
+                          placeholder="0"
+                          className="mt-1"
+                        />
+                      </div>
+                      {/* Image */}
+                      <div className="col-span-full">
+                        <Label className="text-sm font-medium text-foreground mb-1.5 block">Display Jewellery (Image) <span className="text-destructive">*</span></Label>
+                        <ImageUploader
+                          value={images}
+                          onChange={setImages}
+                          purpose="product"
+                          multiple={false}
+                          maxFiles={1}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </section>
 
+              {isStandard && (
+                <>
               {/* Section: Inventory */}
               <section ref={(el) => (sectionRefs.current.inventory = el)}>
                 <h3 className="text-base font-semibold text-foreground mb-4 pb-2 border-b border-border flex items-center gap-2">
@@ -658,26 +761,10 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-x-4 gap-y-5">
                   <div>
                     <Label className="text-sm font-medium text-foreground mb-1.5 block">
-                      Purchase Price <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={form.purchasePrice}
-                        onChange={(e) => updateField("purchasePrice", e.target.value)}
-                        placeholder="0.00"
-                        className="pl-7 text-right"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-foreground mb-1.5 block">
                       MRP <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative mt-1">
-                      <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
+                      <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">₹</span>
                       <Input
                         type="number"
                         step="0.01"
@@ -687,6 +774,17 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                         className="pl-7 text-right"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground mb-1.5 block">Tax (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={parseFloat(form.taxPercent) || ""}
+                      onChange={(e) => updateField("taxPercent", e.target.value)}
+                      placeholder="18"
+                      className="mt-1 text-right"
+                    />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-foreground mb-1.5 block">Discount (%)</Label>
@@ -702,20 +800,52 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-foreground mb-1.5 block">Tax (%)</Label>
-                    <Select value={form.taxPercent} onValueChange={(val) => updateField("taxPercent", val)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="18%" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TAX_OPTIONS.map((tax) => (
-                          <SelectItem key={tax} value={tax}>
-                            {tax}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-medium text-foreground mb-1.5 block">
+                      Cost Price (Pre GST) <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">₹</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={form.preGst}
+                        onChange={(e) => {
+                          updateField("preGst", e.target.value);
+                          const cost = parseFloat(e.target.value) || 0;
+                          let gst = typeof form.taxPercent === 'string' ? parseFloat(form.taxPercent.replace('%', '')) : parseFloat(form.taxPercent);
+                          gst = gst || 0;
+                          const purchase = cost * (1 + gst / 100);
+                          updateField("purchasePrice", purchase.toFixed(2));
+                        }}
+                        placeholder="0.00"
+                        className="pl-7 text-right"
+                      />
+                    </div>
                   </div>
+                  <div>
+                    <Label className="text-sm font-medium text-foreground mb-1.5 block">
+                      Purchase Price (incl. GST)
+                    </Label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">₹</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={form.purchasePrice}
+                        onChange={(e) => {
+                          updateField("purchasePrice", e.target.value);
+                          const purchase = parseFloat(e.target.value) || 0;
+                          let gst = typeof form.taxPercent === 'string' ? parseFloat(form.taxPercent.replace('%', '')) : parseFloat(form.taxPercent);
+                          gst = gst || 0;
+                          const cost = purchase / (1 + gst / 100);
+                          updateField("preGst", cost.toFixed(2));
+                        }}
+                        placeholder="0.00"
+                        className="pl-7 text-right"
+                      />
+                    </div>
+                  </div>
+
                 </div>
               </section>
 
@@ -771,6 +901,8 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
                   </div>
                 </div>
               </section>
+              </>
+              )}
 
               {/* Bottom spacer */}
               <div className="h-8" />

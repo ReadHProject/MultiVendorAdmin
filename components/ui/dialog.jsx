@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 export function Dialog({ controlledOpen, onOpenChange, children }) {
@@ -45,6 +46,12 @@ DialogTrigger.displayName = "DialogTrigger";
 export const DialogContent = React.forwardRef(
   ({ className, children, ...props }, ref) => {
     const { open, setOpen } = useDialog();
+    const [mounted, setMounted] = useState(false);
+
+    React.useEffect(() => {
+      setMounted(true);
+    }, []);
+
     React.useEffect(() => {
       if (!open) return;
       const onKey = (e) => {
@@ -57,8 +64,10 @@ export const DialogContent = React.forwardRef(
         document.body.style.overflow = "";
       };
     }, [open, setOpen]);
-    if (!open) return null;
-    return (
+    
+    if (!open || !mounted) return null;
+    
+    return createPortal(
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div
           className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0"
@@ -76,7 +85,8 @@ export const DialogContent = React.forwardRef(
         >
           {children}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 );

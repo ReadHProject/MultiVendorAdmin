@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Image, Trash2, Plus } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const API = typeof window !== "undefined"
+  ? "/api/v1"
+  : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1");
 const API_BASE = API.replace(/\/api\/v1\/?$/, "");
 
 function getToken() {

@@ -84,6 +84,7 @@ export default function ProductNewPage() {
     maxOrderQty: "",
     initialStock: "0",
     customSku: "",
+    preGst: "",
   });
 
   const [rolePricing, setRolePricing] = useState([]);
@@ -122,6 +123,12 @@ export default function ProductNewPage() {
         .map((c) => ({ id: c.id, name: c.name }))
     : [];
 
+  const selectedProductTypeName = (productTypesData?.data || productTypesData || [])
+    .find((pt) => pt.id === form.productTypeId)?.name?.toLowerCase();
+    
+  const isJewelry = selectedProductTypeName === "jewelry" || selectedProductTypeName === "jewellery";
+  const isStandard = selectedProductTypeName === "cosmetics" || selectedProductTypeName === "cutlery";
+
   function updateField(field, value) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
@@ -131,6 +138,35 @@ export default function ProductNewPage() {
       return next;
     });
   }
+
+  // Calculate pricing when MRP, discount, or tax changes for Cosmetics/Cutlery
+  useEffect(() => {
+    if (isStandard) {
+      const mrp = parseFloat(form.mrp) || 0;
+      const discount = parseFloat(form.discountPercent) || 0;
+      let gst = 0;
+      if (typeof form.taxPercent === 'string') {
+        gst = parseFloat(form.taxPercent.replace('%', '')) || 0;
+      } else {
+        gst = parseFloat(form.taxPercent) || 0;
+      }
+
+      if (mrp > 0) {
+        const purchasePrice = mrp - (mrp * discount) / 100;
+        const costPrice = purchasePrice / (1 + gst / 100);
+
+        const newPurchaseStr = purchasePrice.toFixed(2);
+        const newCostStr = costPrice.toFixed(2);
+
+        setForm((prev) => {
+          if (prev.purchasePrice !== newPurchaseStr || prev.preGst !== newCostStr) {
+            return { ...prev, purchasePrice: newPurchaseStr, preGst: newCostStr };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [form.mrp, form.discountPercent, form.taxPercent, isStandard]);
 
   const handleCreateSubCategory = useCallback(
     async (e) => {
@@ -187,6 +223,7 @@ export default function ProductNewPage() {
         maxOrderQty: parseInt(form.maxOrderQty) || 0,
         initialStock: parseInt(form.initialStock) || 0,
         customSku: form.customSku || null,
+        preGst: parseFloat(form.preGst) || 0,
         image: images[0] || null,
         images: images,
         rolePrices: rolePricing,
@@ -256,25 +293,15 @@ export default function ProductNewPage() {
                 form.
               </p>
             </div>
-            <div className="md:col-span-2">
-              <DropdownWithCreate
-                label="Customer Type"
-                value={form.customerTypeId}
-                onChange={(val) => updateField("customerTypeId", val)}
-                options={customerTypes.map((ct) => ({ id: ct.id, name: ct.name }))}
-                placeholder="Select Customer Type..."
-                createMutation={createCustomerType}
-                createLabel="Name"
-                createFields={[
-                  { name: "name", label: "Type Name", type: "text", required: true },
-                ]}
-              />
-            </div>
+            
+            {isStandard && (
+              <>
+
 
             {/* Row 2: Category, Sub Category, Brand */}
             <div>
               <DropdownWithCreate
-                label="Category"
+                label="Category *"
                 value={form.categoryId}
                 onChange={(val) => updateField("categoryId", val)}
                 options={flatCategories}
@@ -369,7 +396,7 @@ export default function ProductNewPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <DropdownWithCreate
                 label="Brand"
                 value={form.brandId}
@@ -384,7 +411,7 @@ export default function ProductNewPage() {
               />
             </div>
 
-            {/* Row 3: Product Name, Barcode, Purchase Price, MRP */}
+            {/* Row 3: Product Name, Barcode, Min Stock */}
             <div className="md:col-span-2">
               <Label className="text-[10px] font-black uppercase text-muted-foreground">
                 Product Name <span className="text-destructive">*</span>
@@ -392,15 +419,15 @@ export default function ProductNewPage() {
               <Input
                 value={form.name}
                 onChange={(e) => updateField("name", e.target.value)}
-                placeholder="PRODUCT NAME"
+                placeholder="Cosmetics Item Name"
                 className="mt-1"
                 autoFocus
                 required
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Barcode Serial Number
+                Barcode (12-Digit Numeric)
               </Label>
               <BarcodeGenerator
                 value={form.barcode}
@@ -408,189 +435,134 @@ export default function ProductNewPage() {
                 variant="EAN13"
               />
             </div>
-
             <div>
               <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Purchase Price <span className="text-destructive">*</span>
+                Min Stock (Remainder Limit)
               </Label>
               <Input
                 type="number"
-                step="0.01"
-                value={form.purchasePrice}
-                onChange={(e) => updateField("purchasePrice", e.target.value)}
-                placeholder="0.00"
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                MRP <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.mrp}
-                onChange={(e) => updateField("mrp", e.target.value)}
-                placeholder="0.00"
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Discount (%)
-              </Label>
-              <Input
-                type="number"
-                step="0.01"
                 min="0"
-                max="100"
-                value={form.discountPercent}
-                onChange={(e) => updateField("discountPercent", e.target.value)}
-                placeholder="0.00"
+                value={form.minOrderQty}
+                onChange={(e) => updateField("minOrderQty", e.target.value)}
+                placeholder="0"
                 className="mt-1"
               />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Unit
-              </Label>
-              <Select value={form.unit} onValueChange={(val) => updateField("unit", val)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Pcs" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pcs">Pcs</SelectItem>
-                  <SelectItem value="Kg">Kg</SelectItem>
-                  <SelectItem value="Litre">Litre</SelectItem>
-                  <SelectItem value="Box">Box</SelectItem>
-                  <SelectItem value="Pack">Pack</SelectItem>
-                  <SelectItem value="Pair">Pair</SelectItem>
-                  <SelectItem value="Set">Set</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
-            {/* Row 5: Measurement, Tax, Variant Type, Image Upload */}
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Measurement
-              </Label>
-              <Input
-                value={form.measurement}
-                onChange={(e) => updateField("measurement", e.target.value)}
-                placeholder="e.g. 10g"
-                className="mt-1"
-              />
+            {/* Row 4: MRP, GST Rate, Discount, Cost Price, Purchase Price, Max Stock */}
+            <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-6 gap-6">
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  MRP (Piece) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.mrp}
+                  onChange={(e) => updateField("mrp", e.target.value)}
+                  placeholder="0.00"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  GST Rate (%)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={parseFloat(form.taxPercent) || ""}
+                  onChange={(e) => updateField("taxPercent", e.target.value)}
+                  placeholder="18"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  Discount (%)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.discountPercent}
+                  onChange={(e) => updateField("discountPercent", e.target.value)}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  Cost Price (Pre GST) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.preGst}
+                  onChange={(e) => {
+                    updateField("preGst", e.target.value);
+                    const cost = parseFloat(e.target.value) || 0;
+                    let gst = typeof form.taxPercent === 'string' ? parseFloat(form.taxPercent.replace('%', '')) : parseFloat(form.taxPercent);
+                    gst = gst || 0;
+                    const purchase = cost * (1 + gst / 100);
+                    updateField("purchasePrice", purchase.toFixed(2));
+                  }}
+                  placeholder="0.00"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  Purchase Price (incl. GST)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.purchasePrice}
+                  onChange={(e) => {
+                    updateField("purchasePrice", e.target.value);
+                    const purchase = parseFloat(e.target.value) || 0;
+                    let gst = typeof form.taxPercent === 'string' ? parseFloat(form.taxPercent.replace('%', '')) : parseFloat(form.taxPercent);
+                    gst = gst || 0;
+                    const cost = purchase / (1 + gst / 100);
+                    updateField("preGst", cost.toFixed(2));
+                  }}
+                  placeholder="0.00"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                  Max Stock (Initial Supply)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.initialStock}
+                  onChange={(e) => updateField("initialStock", e.target.value)}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Tax Percentage %
-              </Label>
-              <Select
-                value={form.taxPercent}
-                onValueChange={(val) => updateField("taxPercent", val)}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="18%" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TAX_OPTIONS.map((tax) => (
-                    <SelectItem key={tax} value={tax}>
-                      {tax}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Variant Type
-              </Label>
-              <Select
-                value={form.variantType}
-                onValueChange={(val) => updateField("variantType", val)}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Simple Product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VARIANT_TYPES.map((vt) => (
-                    <SelectItem key={vt} value={vt}>
-                      {vt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-center">
-              <Label className="text-[10px] font-black uppercase text-muted-foreground text-center">
-                Upload Images
+
+            {/* Row 5: Product Image, Product Description */}
+            <div className="md:col-span-1">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground text-left block mb-1.5">
+                Product Image
               </Label>
               <ImageUploader
                 value={images}
                 onChange={setImages}
                 purpose="product"
-                multiple
-                maxFiles={10}
+                multiple={false}
+                maxFiles={1}
               />
             </div>
-
-            {/* Row 6: Min Order Qty, Max Order Qty, Initial Stock, Custom SKU */}
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Minimum Order Qty
-              </Label>
-              <Input
-                type="number"
-                min="1"
-                value={form.minOrderQty}
-                onChange={(e) => updateField("minOrderQty", e.target.value)}
-                placeholder="1"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Maximum Order Qty
-              </Label>
-              <Input
-                type="number"
-                min="0"
-                value={form.maxOrderQty}
-                onChange={(e) => updateField("maxOrderQty", e.target.value)}
-                placeholder="0"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Initial Stock
-              </Label>
-              <Input
-                type="number"
-                min="0"
-                value={form.initialStock}
-                onChange={(e) => updateField("initialStock", e.target.value)}
-                placeholder="0"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase text-muted-foreground">
-                Custom SKU
-              </Label>
-              <Input
-                value={form.customSku}
-                onChange={(e) => updateField("customSku", e.target.value)}
-                placeholder="Auto/Manual"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Row 7: Product Description */}
-            <div className="md:col-span-4">
+            <div className="md:col-span-3">
               <Label className="text-[10px] font-black uppercase text-muted-foreground">
                 Product Description
               </Label>
@@ -598,18 +570,88 @@ export default function ProductNewPage() {
                 value={form.description}
                 onChange={(e) => updateField("description", e.target.value)}
                 placeholder="Enter detailed product description..."
-                className="w-full h-24 px-3 py-2 rounded-md border border-input bg-background text-sm mt-1 resize-none"
+                className="w-full h-32 px-3 py-2 rounded-md border border-input bg-background text-sm mt-1 resize-none"
                 maxLength={1000}
               />
               <p className="text-xs text-muted-foreground text-right mt-1">
                 {form.description.length} / 1000 characters
               </p>
             </div>
+            </>
+            )}
+
+            {isJewelry && (
+              <>
+                <div className="md:col-span-2">
+                  <DropdownWithCreate
+                    label="Category *"
+                    value={form.categoryId}
+                    onChange={(val) => updateField("categoryId", val)}
+                    options={flatCategories}
+                    placeholder="Select Category..."
+                    createMutation={createCategory}
+                    createLabel="Name"
+                    createFields={[
+                      { name: "name", label: "Category Name", type: "text", required: true },
+                    ]}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                    Actual Product Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    placeholder="Actual Product Name"
+                    className="mt-1"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                    Barcode (12-Digit Numeric)
+                  </Label>
+                  <BarcodeGenerator
+                    value={form.barcode}
+                    onChange={(val) => updateField("barcode", val)}
+                    variant="EAN13"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">
+                    Min Stock (Remainder Limit)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={form.minOrderQty}
+                    onChange={(e) => updateField("minOrderQty", e.target.value)}
+                    placeholder="0"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="md:col-span-4 flex flex-col items-start">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground mb-2">
+                    Display Jewellery (Image) <span className="text-destructive">*</span>
+                  </Label>
+                  <ImageUploader
+                    value={images}
+                    onChange={setImages}
+                    purpose="product"
+                    multiple={false}
+                    maxFiles={1}
+                  />
+                </div>
+              </>
+            )}
+
           </div>
         </CardContent>
       </Card>
 
       {/* Role-Based Pricing & Visibility */}
+      {isStandard && (
       <Card>
         <CardHeader>
           <CardTitle>Role-Based Pricing & Visibility</CardTitle>
@@ -768,6 +810,7 @@ export default function ProductNewPage() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
 
     {/* Mobile UI */}
@@ -778,19 +821,34 @@ export default function ProductNewPage() {
         saving={saving}
         onDiscard={() => router.back()}
       />
-      <MobileTabs 
-        tabs={[
-          { id: "general", label: "General Info" },
-          { id: "inventory", label: "Inventory" },
-          { id: "pricing", label: "Pricing Rules" },
-          { id: "media", label: "Media" }
-        ]}
-        activeTab={mobileTab}
-        onChange={setMobileTab}
-      />
+      {isStandard && (
+        <MobileTabs 
+          tabs={[
+            { id: "general", label: "General Info" },
+            { id: "inventory", label: "Inventory" },
+            { id: "pricing", label: "Pricing Rules" },
+            { id: "media", label: "Media" }
+          ]}
+          activeTab={mobileTab}
+          onChange={setMobileTab}
+        />
+      )}
       
       <main className="p-4 space-y-6">
-        {mobileTab === "general" && (
+        <div className="bg-slate-900 border border-slate-800 p-3 rounded-custom">
+          <DropdownWithCreate
+            label="Product Type *"
+            value={form.productTypeId}
+            onChange={(val) => updateField("productTypeId", val)}
+            options={(productTypesData?.data || productTypesData || []).map((pt) => ({ id: pt.id, name: pt.name }))}
+            placeholder="Select Type..."
+            createMutation={createProductType}
+            createLabel="Name"
+            createFields={[{ name: "name", label: "Type Name", type: "text", required: true }]}
+          />
+        </div>
+
+        {isStandard && mobileTab === "general" && (
           <section className="space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Product Name <span className="text-red-500">*</span></Label>
@@ -804,18 +862,6 @@ export default function ProductNewPage() {
             </div>
             
             <div className="grid grid-cols-1 gap-4">
-              <div className="bg-slate-900 border border-slate-800 p-3 rounded-custom">
-                <DropdownWithCreate
-                  label="Product Type"
-                  value={form.productTypeId}
-                  onChange={(val) => updateField("productTypeId", val)}
-                  options={(productTypesData?.data || productTypesData || []).map((pt) => ({ id: pt.id, name: pt.name }))}
-                  placeholder="Select Type..."
-                  createMutation={createProductType}
-                  createLabel="Name"
-                  createFields={[{ name: "name", label: "Type Name", type: "text", required: true }]}
-                />
-              </div>
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-custom">
                 <DropdownWithCreate
                   label="Customer Type"
@@ -907,7 +953,7 @@ export default function ProductNewPage() {
           </section>
         )}
 
-        {mobileTab === "inventory" && (
+        {isStandard && mobileTab === "inventory" && (
           <section className="space-y-4">
             <div className="flex flex-col gap-4">
               <div>
@@ -996,7 +1042,7 @@ export default function ProductNewPage() {
           </section>
         )}
 
-        {mobileTab === "pricing" && (
+        {isStandard && mobileTab === "pricing" && (
           <section className="space-y-6">
             <div className="bg-slate-900/50 rounded-custom border border-slate-800 p-4 space-y-4">
               <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -1069,7 +1115,7 @@ export default function ProductNewPage() {
           </section>
         )}
 
-        {mobileTab === "media" && (
+        {isStandard && mobileTab === "media" && (
           <section className="space-y-6">
             <div>
               <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Product Description</Label>
@@ -1093,6 +1139,63 @@ export default function ProductNewPage() {
                   purpose="product"
                   multiple
                   maxFiles={10}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+        {isJewelry && (
+          <section className="space-y-4">
+            <div className="bg-slate-900 border border-slate-800 p-3 rounded-custom">
+              <DropdownWithCreate
+                label="Category *"
+                value={form.categoryId}
+                onChange={(val) => updateField("categoryId", val)}
+                options={flatCategories}
+                placeholder="Select Category..."
+                createMutation={createCategory}
+                createLabel="Name"
+                createFields={[{ name: "name", label: "Category Name", type: "text", required: true }]}
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Actual Product Name <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="Actual Product Name"
+                className="w-full bg-slate-900 border-slate-800 rounded-custom focus:ring-accent focus:border-accent text-slate-200"
+                required
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Barcode (12-Digit Numeric)</Label>
+              <BarcodeGenerator
+                value={form.barcode}
+                onChange={(val) => updateField("barcode", val)}
+                variant="EAN13"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Min Stock (Remainder Limit)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={form.minOrderQty}
+                onChange={(e) => updateField("minOrderQty", e.target.value)}
+                placeholder="0"
+                className="w-full bg-slate-900 border-slate-800 rounded-custom focus:ring-accent focus:border-accent text-slate-200"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 block">Display Jewellery (Image) <span className="text-red-500">*</span></Label>
+              <div className="bg-slate-900 p-4 border border-slate-800 rounded-custom flex justify-center">
+                <ImageUploader
+                  value={images}
+                  onChange={setImages}
+                  purpose="product"
+                  multiple={false}
+                  maxFiles={1}
                 />
               </div>
             </div>
