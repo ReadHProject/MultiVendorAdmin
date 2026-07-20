@@ -167,9 +167,17 @@ export default function ProductsPage() {
       header: "PRODUCT NAME",
       cell: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded bg-muted overflow-hidden flex items-center justify-center shrink-0">
-            {row.image ? (
-              <img src={resolveImageUrl(row.image)} alt="" className="h-full w-full object-cover" />
+          <div className="h-9 w-9 rounded bg-muted flex items-center justify-center shrink-0">
+            {(row.image || row.images?.[0]) ? (
+              <img 
+                src={resolveImageUrl(row.image || row.images?.[0])} 
+                alt="" 
+                className="h-full w-full object-cover rounded" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement.innerHTML = '<span class="text-muted-foreground text-sm">📦</span>';
+                }}
+              />
             ) : (
               <span className="text-muted-foreground text-sm">📦</span>
             )}
@@ -206,23 +214,38 @@ export default function ProductsPage() {
     },
     {
       header: "DEALER",
-      cell: (row) => <span className="text-xs text-muted-foreground">{formatMoney(row.dealerPrice || 0)}</span>,
+      cell: (row) => {
+        const rp = row.rolePrices?.find(rp => rp.role?.name?.toUpperCase() === "DEALER");
+        return <span className="text-xs text-muted-foreground">{formatMoney(rp?.price ?? row.dealerPrice ?? 0)}</span>;
+      }
     },
     {
       header: "WHOLESALER",
-      cell: (row) => <span className="text-xs text-muted-foreground">{formatMoney(row.wholesalerPrice || 0)}</span>,
+      cell: (row) => {
+        const rp = row.rolePrices?.find(rp => rp.role?.name?.toUpperCase() === "WHOLESALER");
+        return <span className="text-xs text-muted-foreground">{formatMoney(rp?.price ?? row.wholesalerPrice ?? 0)}</span>;
+      }
     },
     {
       header: "PARLOUR",
-      cell: (row) => <span className="text-xs text-muted-foreground">{formatMoney(row.parlourPrice || 0)}</span>,
+      cell: (row) => {
+        const rp = row.rolePrices?.find(rp => rp.role?.name?.toUpperCase() === "PARLOUR");
+        return <span className="text-xs text-muted-foreground">{formatMoney(rp?.price ?? row.parlourPrice ?? 0)}</span>;
+      }
     },
     {
-      header: "RETAIL",
-      cell: (row) => <span className="text-xs text-muted-foreground">{formatMoney(row.retailPrice || 0)}</span>,
+      header: "RETAILER",
+      cell: (row) => {
+        const rp = row.rolePrices?.find(rp => rp.role?.name?.toUpperCase() === "RETAILER");
+        return <span className="text-xs text-muted-foreground">{formatMoney(rp?.price ?? row.retailPrice ?? 0)}</span>;
+      }
     },
     {
-      header: "ONLINE",
-      cell: (row) => <span className="text-xs text-muted-foreground">{formatMoney(row.onlinePrice || 0)}</span>,
+      header: "GENERAL",
+      cell: (row) => {
+        const rp = row.rolePrices?.find(rp => rp.role?.name?.toUpperCase() === "GENERAL");
+        return <span className="text-xs text-muted-foreground">{formatMoney(rp?.price ?? row.onlinePrice ?? 0)}</span>;
+      }
     },
     {
       header: "MRP",

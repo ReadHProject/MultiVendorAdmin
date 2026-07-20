@@ -94,14 +94,13 @@ export default function ProductNewPage() {
   const customerTypes = customerTypesData?.data || customerTypesData || [];
   const categories = categoriesData?.data || categoriesData || [];
   const brands = brandsData?.data || brandsData || [];
-  const roles =
-    rolesData?.data?.map((r) => r.name) || [
-      "Wholesaler",
-      "Dealer",
-      "Retailer",
-      "Parlour",
-      "General",
-    ];
+  const roles = [
+    "Dealer",
+    "Wholesaler",
+    "Parlour",
+    "Retailer",
+    "General",
+  ];
 
   // Get flat categories for dropdown
   const flatCategories = Array.isArray(categories)
@@ -651,7 +650,6 @@ export default function ProductNewPage() {
       </Card>
 
       {/* Role-Based Pricing & Visibility */}
-      {isStandard && (
       <Card>
         <CardHeader>
           <CardTitle>Role-Based Pricing & Visibility</CardTitle>
@@ -810,7 +808,6 @@ export default function ProductNewPage() {
           </div>
         </CardContent>
       </Card>
-      )}
     </div>
 
     {/* Mobile UI */}

@@ -8,12 +8,15 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
 
-const DEFAULT_ROLES = ["Wholesaler", "Dealer", "Retailer", "Parlour", "General"];
+const DEFAULT_ROLES = ["Dealer", "Wholesaler", "Parlour", "Retailer", "General"];
 
 function buildRows(roles, initial) {
   const m = {};
   roles.forEach((role) => {
-    const existing = initial.find((r) => (r.role?.name || r.role) === role);
+    const existing = initial.find((r) => {
+      const rName = r.role?.name || r.role;
+      return typeof rName === 'string' && rName.toUpperCase() === role.toUpperCase();
+    });
     m[role] = existing || {
       role,
       price: 0,
@@ -39,7 +42,16 @@ export function RolePricingEditor({ productId, initial = [], roles = DEFAULT_ROL
 
   useEffect(() => {
     if (dirty.current && inline && onChange) {
-      onChange(Object.values(rows));
+      const parsedRows = Object.values(rows).map(r => ({
+        ...r,
+        price: Number(r.price) || 0,
+        mrp: Number(r.mrp) || 0,
+        discountPercent: Number(r.discountPercent) || 0,
+        minQty: Number(r.minQty) || 1,
+        commissionPercent: Number(r.commissionPercent) || 0,
+        visible: r.visible !== false
+      }));
+      onChange(parsedRows);
     }
   }, [rows, inline, onChange]);
 
