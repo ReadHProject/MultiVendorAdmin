@@ -884,27 +884,29 @@ export default function ProductFormModal({ open, onOpenChange, onCreated, editPr
               )}
 
               {/* Section: Role-Based Pricing */}
-              <section>
-                <div className="bg-card rounded-lg border border-border overflow-hidden">
-                  <div className="bg-muted/50 px-4 py-3 border-b border-border">
-                    <h3 className="text-sm font-semibold text-primary">Role-Based Pricing & Visibility</h3>
+              {form.productTypeId && (
+                <section>
+                  <div className="bg-card rounded-lg border border-border overflow-hidden">
+                    <div className="bg-muted/50 px-4 py-3 border-b border-border">
+                      <h3 className="text-sm font-semibold text-primary">Role-Based Pricing & Visibility</h3>
+                    </div>
+                    <div className="p-0">
+                      <RolePricingEditor
+                        initial={rolePricing}
+                        onChange={setRolePricing}
+                        roles={[
+                          "Dealer",
+                          "Wholesaler",
+                          "Parlour",
+                          "Retailer",
+                          "General"
+                        ]}
+                        inline
+                      />
+                    </div>
                   </div>
-                  <div className="p-0">
-                    <RolePricingEditor
-                      initial={rolePricing}
-                      onChange={setRolePricing}
-                      roles={[
-                        "Dealer",
-                        "Wholesaler",
-                        "Parlour",
-                        "Retailer",
-                        "General"
-                      ]}
-                      inline
-                    />
-                  </div>
-                </div>
-              </section>
+                </section>
+              )}
 
               {/* Bottom spacer */}
               <div className="h-8" />

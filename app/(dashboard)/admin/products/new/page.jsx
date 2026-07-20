@@ -650,11 +650,12 @@ export default function ProductNewPage() {
       </Card>
 
       {/* Role-Based Pricing & Visibility */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Role-Based Pricing & Visibility</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {form.productTypeId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Role-Based Pricing & Visibility</CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs font-semibold text-muted-foreground border-b pb-2">
               <div>Consumer Role</div>
@@ -807,7 +808,8 @@ export default function ProductNewPage() {
             })}
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      )}
     </div>
 
     {/* Mobile UI */}
@@ -1100,15 +1102,17 @@ export default function ProductNewPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-400">Role-Based Pricing & Visibility</h3>
-              <RolePricingEditor
-                initial={rolePricing}
-                onChange={setRolePricing}
-                roles={roles}
-                inline
-              />
-            </div>
+            {form.productTypeId && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-400">Role-Based Pricing & Visibility</h3>
+                <RolePricingEditor
+                  initial={rolePricing}
+                  onChange={setRolePricing}
+                  roles={roles}
+                  inline
+                />
+              </div>
+            )}
           </section>
         )}
 
