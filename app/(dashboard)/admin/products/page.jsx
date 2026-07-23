@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { formatMoney, formatDate, cn } from "@/lib/utils";
+import { toast } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -147,6 +148,7 @@ export default function ProductsPage() {
       await Promise.all(selectedProducts.map(id => api.delete(`/products/${id}`)));
       setSelectedProducts([]);
       fetchProducts();
+      toast.success(`${selectedProducts.length} product(s) deleted successfully`);
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to delete products");
