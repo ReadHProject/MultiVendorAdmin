@@ -786,7 +786,7 @@ function ReceiptHistoryModal({ open, onOpenChange }) {
     if (open) {
       setLoading(true);
       api.get("/purchase-orders?status=RECEIVED")
-        .then(res => setHistory(res.data?.items || []))
+        .then(res => setHistory(res.items || []))
         .catch(console.error)
         .finally(() => setLoading(false));
     }
