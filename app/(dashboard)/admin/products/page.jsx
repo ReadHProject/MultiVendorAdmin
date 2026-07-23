@@ -69,6 +69,7 @@ export default function ProductsPage() {
     setError(null);
     try {
       const params = new URLSearchParams({ page: String(page) });
+      params.set("status", "ACTIVE");
       if (q) params.set("q", q);
       const res = await api.get(`/products?${params.toString()}`);
       setData(res);
@@ -136,6 +137,19 @@ export default function ProductsPage() {
       alert(err.message || "Failed to receive stock");
     } finally {
       setSubmittingReceive(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) return;
+    
+    try {
+      await Promise.all(selectedProducts.map(id => api.delete(`/products/${id}`)));
+      setSelectedProducts([]);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to delete products");
     }
   };
 
@@ -415,7 +429,7 @@ export default function ProductsPage() {
               Print Barcodes
             </Button>
 
-            <Button variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10">
+            <Button variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" onClick={handleDeleteSelected}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Delete
             </Button>
