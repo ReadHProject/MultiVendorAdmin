@@ -12,6 +12,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { Plus, MoreVertical } from "lucide-react";
 import { MobileFooter, MobileHeader } from "@/components/admin/mobile/mobile-layout";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function PurchaseOrdersPage() {
@@ -21,6 +23,7 @@ export default function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
+  const [selectedPO, setSelectedPO] = useState(null);
   
   // Pagination & Filters
   const [page, setPage] = useState(1);
@@ -187,9 +190,16 @@ export default function PurchaseOrdersPage() {
       header: "ACTIONS",
       className: "text-center",
       cell: (item) => (
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => router.push(`/admin/purchase-orders/${item.id}`)}>
-          <MoreVertical className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+            <MoreVertical className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSelectedPO(item)}>
+              View Details
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -303,6 +313,142 @@ export default function PurchaseOrdersPage() {
           </>
         )}
       </div>
+
+      <Dialog controlledOpen={!!selectedPO} onOpenChange={(open) => !open && setSelectedPO(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl">
+          {selectedPO && (
+            <div className="space-y-6">
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <DialogTitle className="text-xl">Purchase Order {selectedPO.poNumber}</DialogTitle>
+                  <StatusBadge status={selectedPO.status} />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Created on {new Date(selectedPO.createdAt).toLocaleString()}
+                </div>
+              </DialogHeader>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Supplier Information */}
+                <div className="border border-border rounded-lg p-4 space-y-3 shadow-sm bg-card">
+                  <h4 className="text-[10px] font-bold text-muted-foreground uppercase">Supplier Information</h4>
+                  <div className="grid grid-cols-[100px_1fr] text-sm gap-2">
+                    <span className="text-muted-foreground">Company:</span>
+                    <span className="font-bold text-right">{selectedPO.supplier?.companyName || "-"}</span>
+                    
+                    <span className="text-muted-foreground">GSTIN:</span>
+                    <span className="text-right">{selectedPO.supplier?.gstin || "-"}</span>
+                    
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span className="text-right">{selectedPO.supplier?.phone || "-"}</span>
+                    
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="text-right">{selectedPO.supplier?.email || "-"}</span>
+                  </div>
+                </div>
+
+                {/* Invoice Metadata */}
+                <div className="border border-border rounded-lg p-4 space-y-3 shadow-sm bg-card">
+                  <h4 className="text-[10px] font-bold text-muted-foreground uppercase">Invoice Metadata</h4>
+                  <div className="grid grid-cols-[100px_1fr] text-sm gap-2">
+                    <span className="text-muted-foreground">Invoice No:</span>
+                    <span className="font-bold text-right">{selectedPO.supplierInvoiceNumber || "-"}</span>
+                    
+                    <span className="text-muted-foreground">Invoice Date:</span>
+                    <span className="text-right">{selectedPO.supplierInvoiceDate ? new Date(selectedPO.supplierInvoiceDate).toLocaleDateString() : "-"}</span>
+                    
+                    <span className="text-muted-foreground">Payment Status:</span>
+                    <span className="text-right font-medium">UNPAID</span>
+                    
+                    <span className="text-muted-foreground">Payment Mode:</span>
+                    <span className="text-right font-medium">CREDIT</span>
+                    
+                    <span className="text-muted-foreground">Total Items:</span>
+                    <span className="text-right font-bold">{selectedPO.items?.length || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="border border-border rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted text-muted-foreground text-[10px] uppercase text-left font-bold border-b border-border">
+                    <tr>
+                      <th className="p-3">Product Name</th>
+                      <th className="p-3">SKU</th>
+                      <th className="p-3 text-right">Cost Price</th>
+                      <th className="p-3 text-center">Billed Qty</th>
+                      <th className="p-3 text-center">Recv Qty</th>
+                      <th className="p-3 text-center">GST Rate</th>
+                      <th className="p-3 text-right">Pre-GST Total</th>
+                      <th className="p-3 text-right">Final Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {selectedPO.items?.map((it, idx) => (
+                      <tr key={idx} className="bg-background">
+                        <td className="p-3 font-bold">{it.product?.name || "Unknown Product"}</td>
+                        <td className="p-3 text-muted-foreground">{it.product?.customSku || "-"}</td>
+                        <td className="p-3 text-right">₹{Number(it.preGstRate || 0).toFixed(2)}</td>
+                        <td className="p-3 text-center">{it.billedQty || it.quantity || 0}</td>
+                        <td className="p-3 text-center text-rose-500 font-bold">{it.receivedQty || it.actualQty || it.quantity || 0}</td>
+                        <td className="p-3 text-center">{it.gstPercent || 0}%</td>
+                        <td className="p-3 text-right">₹{Number(it.preGstAmount || ((it.preGstRate || 0) * (it.actualQty || it.quantity || 0))).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td className="p-3 text-right font-bold text-foreground">₹{Number(it.finalAmount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Invoice Attachment */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-muted-foreground uppercase">Invoice Attachment</h4>
+                  <div className="border border-dashed border-border rounded-lg p-8 flex flex-col items-center justify-center text-muted-foreground h-[170px] bg-card">
+                    <div className="h-10 w-10 bg-muted rounded flex items-center justify-center mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-text text-muted-foreground"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    </div>
+                    {selectedPO.invoiceFile ? (
+                       <a href={selectedPO.invoiceFile} target="_blank" rel="noreferrer" className="text-sm font-medium text-primary hover:underline">View Uploaded Bill</a>
+                    ) : (
+                       <p className="text-sm">No bill image uploaded for this order</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Totals Summary */}
+                <div className="border border-border rounded-lg p-4 space-y-4 flex flex-col justify-between shadow-sm bg-card">
+                  <div>
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase mb-4">Totals Summary</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal (Pre-GST Amount):</span>
+                        <span className="font-medium text-foreground">₹{Number(selectedPO.subtotal || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total after GST:</span>
+                        <span className="font-medium text-foreground">₹{Number(selectedPO.grandTotal || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="bg-card p-3 rounded-xl flex justify-between items-center mb-4 border border-border shadow-sm">
+                      <span className="font-bold text-sm">Grand Total (After Margin):</span>
+                      <span className="font-bold text-rose-500 text-lg">₹{Number(selectedPO.payableAmount || selectedPO.grandTotal || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl" onClick={() => setSelectedPO(null)}>
+                      CLOSE
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile UI */}
       <div className="block md:hidden pb-24 min-h-screen bg-slate-950 text-slate-200">

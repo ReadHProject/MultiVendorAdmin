@@ -6,6 +6,8 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Icon } from "@/components/ui/icon";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ArrowLeft, Save, Info, IndianRupee } from "lucide-react";
 
 export default function CreatePurchaseInvoice() {
   const router = useRouter();
@@ -412,152 +414,193 @@ export default function CreatePurchaseInvoice() {
       </div>
 
       {/* Add Product Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-[96vw] max-w-5xl overflow-hidden flex flex-col md:h-[auto] max-h-[96vh]">
-            <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
-              <h2 className="text-lg font-bold text-foreground">Add Product Item</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                <Icon name="close" />
+      <Dialog controlledOpen={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="w-[96vw] max-w-6xl h-[96vh] md:h-[auto] md:max-h-[96vh] p-0 gap-0 overflow-hidden rounded-lg grid-rows-[auto_1fr]">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b bg-surface shrink-0">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-lg font-semibold text-foreground">
+                Add Product Item
+              </h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-sm font-medium text-muted-foreground px-4 py-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveItem}
+                className="bg-primary text-primary-foreground text-sm font-medium px-5 py-2 rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save Item
               </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Barcode</label>
-                  <input 
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.barcode} onChange={e => setModalData({...modalData, barcode: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Product</label>
-                  <select 
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.productId} onChange={e => setModalData({...modalData, productId: e.target.value})}
-                  >
-                    <option value="" className="bg-background">Select product...</option>
-                    {products.map(p => <option key={p.id} value={p.id} className="bg-background">{p.name}</option>)}
-                  </select>
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Pack Size</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.packSize} onChange={e => setModalData({...modalData, packSize: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-rose-500 uppercase">MRP/Piece</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm text-rose-500"
-                    value={modalData.mrp} onChange={e => setModalData({...modalData, mrp: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">GST %</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.gstPercent} onChange={e => setModalData({...modalData, gstPercent: e.target.value})}
-                  />
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Disc %</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.discountPercent} onChange={e => setModalData({...modalData, discountPercent: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Pre-GST Rate</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.preGstRate} onChange={e => setModalData({...modalData, preGstRate: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Purchase Price</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.purchasePrice} onChange={e => setModalData({...modalData, purchasePrice: e.target.value})}
-                  />
-                </div>
+          </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Actual Qty.</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.actualQty} onChange={e => setModalData({...modalData, actualQty: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Billed Qty.</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.billedQty} onChange={e => setModalData({...modalData, billedQty: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Add. Disc %</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.additionalDiscountPercent} onChange={e => setModalData({...modalData, additionalDiscountPercent: e.target.value})}
-                  />
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Trans. Cost</label>
-                  <input 
-                    type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={modalData.transportCost} onChange={e => setModalData({...modalData, transportCost: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Calculated Amt</label>
-                  <input 
-                    type="text" readOnly className="flex h-9 w-full rounded-md border border-input bg-muted/50 px-3 py-1 text-sm shadow-sm font-bold text-foreground"
-                    value={`₹${modalData.calculatedAmt.toFixed(2)}`}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border">
-                <h3 className="text-sm font-bold mb-3 text-foreground">Set Selling Prices (Overrides)</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Dealer Price</label>
-                    <input type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.dealerPrice} onChange={e => setModalData({...modalData, dealerPrice: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Wholesale</label>
-                    <input type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.wholesalePrice} onChange={e => setModalData({...modalData, wholesalePrice: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Parlour Price</label>
-                    <input type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.parlourPrice} onChange={e => setModalData({...modalData, parlourPrice: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Retail Price</label>
-                    <input type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.retailPrice} onChange={e => setModalData({...modalData, retailPrice: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Online Price</label>
-                    <input type="number" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.onlinePrice} onChange={e => setModalData({...modalData, onlinePrice: e.target.value})} />
-                  </div>
-                </div>
-              </div>
+          {/* Modal Body */}
+          <div className="flex flex-1 overflow-hidden min-h-0">
+            {/* Side Navigation */}
+            <div className="w-[200px] bg-muted/30 border-r border-border flex flex-col py-4 shrink-0 hidden sm:flex">
+              <button className="flex items-center gap-3 px-4 py-3 text-left transition-colors bg-card text-foreground border-l-4 border-primary font-medium">
+                <Info className="h-5 w-5 shrink-0" />
+                <span className="text-[13px] font-medium">General Info</span>
+              </button>
             </div>
-            
-            <div className="p-4 border-t border-border flex justify-end gap-3 bg-muted/30">
-              <button onClick={() => setIsModalOpen(false)} className="px-6 py-2 border border-border bg-background rounded-md text-sm font-semibold hover:bg-muted transition-colors">Cancel</button>
-              <button onClick={handleSaveItem} className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-sm font-semibold shadow-sm transition-colors">Save Item</button>
+
+            {/* Form Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 bg-surface-bright">
+              <div className="space-y-8 max-w-full">
+                
+                <section>
+                  <h3 className="text-base font-semibold text-foreground mb-4 pb-2 border-b border-border flex items-center gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground" /> Item Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Barcode</label>
+                      <input 
+                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.barcode} onChange={e => setModalData({...modalData, barcode: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Product</label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.productId} onChange={e => setModalData({...modalData, productId: e.target.value})}
+                      >
+                        <option value="" className="bg-background">Select product...</option>
+                        {products.map(p => <option key={p.id} value={p.id} className="bg-background">{p.name}</option>)}
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Pack Size</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.packSize} onChange={e => setModalData({...modalData, packSize: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-rose-500 uppercase">MRP/Piece</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm text-rose-500"
+                        value={modalData.mrp} onChange={e => setModalData({...modalData, mrp: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">GST %</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.gstPercent} onChange={e => setModalData({...modalData, gstPercent: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Disc %</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.discountPercent} onChange={e => setModalData({...modalData, discountPercent: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Pre-GST Rate</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.preGstRate} onChange={e => setModalData({...modalData, preGstRate: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Purchase Price</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.purchasePrice} onChange={e => setModalData({...modalData, purchasePrice: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Actual Qty.</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.actualQty} onChange={e => setModalData({...modalData, actualQty: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Billed Qty.</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.billedQty} onChange={e => setModalData({...modalData, billedQty: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Add. Disc %</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.additionalDiscountPercent} onChange={e => setModalData({...modalData, additionalDiscountPercent: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Trans. Cost</label>
+                      <input 
+                        type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                        value={modalData.transportCost} onChange={e => setModalData({...modalData, transportCost: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Calculated Amt</label>
+                      <input 
+                        type="text" readOnly className="flex h-10 w-full rounded-md border border-input bg-muted/50 px-3 py-1 text-sm shadow-sm font-bold text-foreground"
+                        value={`₹${modalData.calculatedAmt.toFixed(2)}`}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-base font-semibold text-foreground mb-4 pb-2 border-b border-border flex items-center gap-2">
+                    <IndianRupee className="h-4 w-4 text-muted-foreground" /> Selling Prices (Overrides)
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Dealer Price</label>
+                      <input type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.dealerPrice} onChange={e => setModalData({...modalData, dealerPrice: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Wholesale</label>
+                      <input type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.wholesalePrice} onChange={e => setModalData({...modalData, wholesalePrice: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Parlour Price</label>
+                      <input type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.parlourPrice} onChange={e => setModalData({...modalData, parlourPrice: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Retail Price</label>
+                      <input type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.retailPrice} onChange={e => setModalData({...modalData, retailPrice: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase">Online Price</label>
+                      <input type="number" className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={modalData.onlinePrice} onChange={e => setModalData({...modalData, onlinePrice: e.target.value})} />
+                    </div>
+                  </div>
+                </section>
+                
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
