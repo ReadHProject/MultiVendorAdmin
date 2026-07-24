@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, MoreVertical } from "lucide-react";
 import { MobileFooter, MobileHeader } from "@/components/admin/mobile/mobile-layout";
 import { toast } from "sonner";
 
@@ -172,8 +172,25 @@ export default function PurchaseOrdersPage() {
       }
     },
     {
+      header: "BILLED QTY",
+      className: "text-center",
+      cell: (item) => {
+        const qty = item.items?.reduce((sum, i) => sum + (i.billedQty || i.quantity || 0), 0) || 0;
+        return <span className="text-xs">{qty}</span>;
+      }
+    },
+    {
       header: "STATUS",
       cell: (item) => <StatusBadge status={item.status} />,
+    },
+    {
+      header: "ACTIONS",
+      className: "text-center",
+      cell: (item) => (
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => router.push(`/admin/purchase-orders/${item.id}`)}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      ),
     },
   ];
 

@@ -15,6 +15,7 @@ export default function CreatePurchaseInvoice() {
   const [supplierId, setSupplierId] = useState("");
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("");
   const [supplierInvoiceDate, setSupplierInvoiceDate] = useState("");
+  const [paymentMode, setPaymentMode] = useState("ON CREDIT (Supplier Ledger)");
   
   // Data sources
   const [warehouses, setWarehouses] = useState([]);
@@ -73,21 +74,55 @@ export default function CreatePurchaseInvoice() {
   }, []);
 
   useEffect(() => {
-    // Calculate modal amount whenever relevant fields change
-    const { billedQty, preGstRate, gstPercent, discountPercent, additionalDiscountPercent, transportCost } = modalData;
-    let base = Number(preGstRate) * Number(billedQty);
-    // apply discount
-    let afterDisc = base - (base * (Number(discountPercent) / 100));
-    // apply additional discount
-    let afterAddDisc = afterDisc - (afterDisc * (Number(additionalDiscountPercent) / 100));
-    // apply gst
-    let gstAmt = afterAddDisc * (Number(gstPercent) / 100);
-    let finalAmt = afterAddDisc + gstAmt + Number(transportCost || 0);
+    const { mrp, gstPercent, discountPercent, billedQty, additionalDiscountPercent, transportCost, preGstRate } = modalData;
     
-    setModalData(prev => ({ ...prev, calculatedAmt: finalAmt }));
+    const numericMrp = Number(mrp) || 0;
+    const numericDisc = Number(discountPercent) || 0;
+    const numericGst = Number(gstPercent) || 0;
+    
+    // 1. Calculate Purchase Price & Pre-GST Rate from MRP
+    const pp = numericMrp - (numericMrp * numericDisc / 100);
+    const calculatedPreGst = pp / (1 + numericGst / 100);
+    const roundedPreGst = Number(calculatedPreGst.toFixed(2));
+    
+    const actualPreGst = numericMrp > 0 ? roundedPreGst : Number(preGstRate || 0);
+    
+    // 2. Calculate Final Amount
+    let base = actualPreGst * Number(billedQty || 0);
+    let afterDisc = numericMrp > 0 ? base : (base - (base * (numericDisc / 100)));
+    let afterAddDisc = afterDisc - (afterDisc * (Number(additionalDiscountPercent || 0) / 100));
+    let gstAmt = afterAddDisc * (numericGst / 100);
+    let finalAmt = afterAddDisc + gstAmt + Number(transportCost || 0);
+
+    // 3. Selling prices default (Pre-GST + 10%)
+    const defaultSellingPrice = Number((actualPreGst * 1.1).toFixed(2));
+    
+    setModalData(prev => {
+      const updates = { ...prev };
+      let changed = false;
+      
+      const newPP = Number(pp.toFixed(2));
+      const newFinalAmt = Number(finalAmt.toFixed(2));
+      
+      if (numericMrp > 0 && Number(prev.purchasePrice) !== newPP) { updates.purchasePrice = newPP; changed = true; }
+      if (numericMrp > 0 && Number(prev.preGstRate) !== actualPreGst) { updates.preGstRate = actualPreGst; changed = true; }
+      if (Number(prev.calculatedAmt) !== newFinalAmt) { updates.calculatedAmt = newFinalAmt; changed = true; }
+      
+      // Auto-set selling prices if they are 0 and we calculated a valid Pre-GST
+      if (actualPreGst > 0) {
+        if (!prev.dealerPrice || Number(prev.dealerPrice) === 0) { updates.dealerPrice = defaultSellingPrice; changed = true; }
+        if (!prev.wholesalePrice || Number(prev.wholesalePrice) === 0) { updates.wholesalePrice = defaultSellingPrice; changed = true; }
+        if (!prev.parlourPrice || Number(prev.parlourPrice) === 0) { updates.parlourPrice = defaultSellingPrice; changed = true; }
+        if (!prev.retailPrice || Number(prev.retailPrice) === 0) { updates.retailPrice = defaultSellingPrice; changed = true; }
+        if (!prev.onlinePrice || Number(prev.onlinePrice) === 0) { updates.onlinePrice = defaultSellingPrice; changed = true; }
+      }
+      
+      return changed ? updates : prev;
+    });
   }, [
-    modalData.billedQty, modalData.preGstRate, modalData.gstPercent, 
-    modalData.discountPercent, modalData.additionalDiscountPercent, modalData.transportCost
+    modalData.mrp, modalData.gstPercent, modalData.discountPercent, 
+    modalData.billedQty, modalData.additionalDiscountPercent, modalData.transportCost,
+    modalData.preGstRate
   ]);
 
   const handleSaveItem = () => {
@@ -172,12 +207,16 @@ export default function CreatePurchaseInvoice() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">City *</label>
-            <select 
+        <select 
               className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
               value={warehouseId} onChange={e => setWarehouseId(e.target.value)}
             >
-              <option value="" className="bg-background">Select City / Warehouse...</option>
-              {warehouses.map(w => <option key={w.id} value={w.id} className="bg-background">{w.name}</option>)}
+              <option value="" className="bg-background">Select City...</option>
+              {warehouses.map(w => (
+                <option key={w.id} value={w.id} className="bg-background">
+                  {w.city ? w.city.toUpperCase() : w.name.toUpperCase()}
+                </option>
+              ))}
             </select>
           </div>
           
@@ -191,7 +230,19 @@ export default function CreatePurchaseInvoice() {
                 <option value="" className="bg-background">Select Supplier...</option>
                 {suppliers.map(s => <option key={s.id} value={s.id} className="bg-background">{s.companyName}</option>)}
               </select>
-              <button className="h-10 px-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-md text-xs font-semibold whitespace-nowrap transition-colors">View Details</button>
+              <button 
+                type="button"
+                onClick={() => {
+                  if (!supplierId) return toast.error("Please select a supplier first.");
+                  const supplier = suppliers.find(s => s.id === supplierId);
+                  if (supplier) {
+                    alert(`🏢 Company: ${supplier.companyName || 'N/A'}\n👤 Contact: ${supplier.contactName || 'N/A'}\n📍 City: ${supplier.city || 'N/A'}\n🗺️ State Code: ${supplier.state || 'N/A'}`);
+                  }
+                }}
+                className="h-10 px-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-md text-xs font-semibold whitespace-nowrap transition-colors"
+              >
+                View Details
+              </button>
             </div>
           </div>
           
@@ -214,6 +265,17 @@ export default function CreatePurchaseInvoice() {
               className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
               value={supplierInvoiceDate} onChange={e => setSupplierInvoiceDate(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Mode *</label>
+            <select 
+              className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              value={paymentMode} onChange={e => setPaymentMode(e.target.value)}
+            >
+              <option value="ON CREDIT (Supplier Ledger)" className="bg-background">ON CREDIT (Supplier Ledger)</option>
+              <option value="CASH / PRE-PAID (No Ledger Debt)" className="bg-background">CASH / PRE-PAID (No Ledger Debt)</option>
+            </select>
           </div>
         </div>
 
@@ -352,7 +414,7 @@ export default function CreatePurchaseInvoice() {
       {/* Add Product Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-[96vw] max-w-5xl overflow-hidden flex flex-col md:h-[auto] max-h-[96vh]">
             <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
               <h2 className="text-lg font-bold text-foreground">Add Product Item</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
