@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { toast } from "@/components/ui/toaster";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 const statusVariant = {
   PENDING: "warning",
   APPROVED: "success",
@@ -168,11 +168,7 @@ export default function VendorsPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-12 bg-muted animate-pulse rounded" />
-          ))}
-        </div>
+        <LoadingAnimation type="table" />
       ) : (
         <DataTable columns={columns} data={items} empty="No vendors" />
       )}

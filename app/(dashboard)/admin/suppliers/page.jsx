@@ -20,7 +20,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { MobileFooter, MobileHeader } from "@/components/admin/mobile/mobile-layout";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 const MARGIN_FIELDS = [
   { key: "dealerMargin", label: "Dealer Margin (%)" },
   { key: "wholesalerMargin", label: "Wholesaler Margin (%)" },
@@ -290,11 +290,7 @@ export default function SuppliersPage() {
           </div>
 
           {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
+            <LoadingAnimation type="table" />
           ) : (
             <div className="bg-card border border-border rounded-lg overflow-x-auto">
               <DataTable columns={columns} data={items} empty="No suppliers found" />
@@ -323,11 +319,7 @@ export default function SuppliersPage() {
           />
 
           {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-28 bg-slate-900 animate-pulse rounded-custom" />
-              ))}
-            </div>
+            <LoadingAnimation type="card" />
           ) : items.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm">No suppliers found</div>
           ) : (
@@ -382,246 +374,162 @@ export default function SuppliersPage() {
       {/* ADD / EDIT SUPPLIER MODAL */}
       <Dialog controlledOpen={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-          <DialogHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-card z-10 flex flex-row items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="shrink-0 -ml-2">
-              <Icon name="arrow-left" size={20} />
-            </Button>
-            <DialogTitle className="text-xl">{editingSupplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle>
-          </DialogHeader>
-
-          <div className="p-6 space-y-8 bg-slate-50/50 dark:bg-slate-900/20">
-            {/* Personal Info */}
-            <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-semibold mb-6 text-foreground">Personal Info</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Company Name <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.companyName} 
-                    onChange={e => setForm({...form, companyName: e.target.value})}
-                    placeholder="COMPANY NAME"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Name <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.contactName} 
-                    onChange={e => setForm({...form, contactName: e.target.value})}
-                    placeholder="NAME"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">GSTIN</label>
-                  <Input 
-                    value={form.gstin} 
-                    onChange={e => setForm({...form, gstin: e.target.value})}
-                    placeholder="22AAAAAA0000A1Z5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input 
-                    type="email"
-                    value={form.email} 
-                    onChange={e => setForm({...form, email: e.target.value})}
-                    placeholder="EMAIL@EXAMPLE.COM"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number <span className="text-red-500">*</span></label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 border border-r-0 border-input bg-muted text-muted-foreground text-sm rounded-l-md">+91</span>
-                    <Input 
-                      className="rounded-l-none"
-                      value={form.phone} 
-                      onChange={e => setForm({...form, phone: e.target.value})}
-                      placeholder="9876543210"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number 2</label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-3 border border-r-0 border-input bg-muted text-muted-foreground text-sm rounded-l-md">+91</span>
-                    <Input 
-                      className="rounded-l-none"
-                      value={form.phone2} 
-                      onChange={e => setForm({...form, phone2: e.target.value})}
-                      placeholder="9876543210"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status <span className="text-red-500">*</span></label>
-                  <select 
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={form.status ? "Active" : "Inactive"}
-                    onChange={e => setForm({...form, status: e.target.value === "Active"})}
-                  >
-                    <option>Active</option>
-                    <option>Inactive</option>
-                  </select>
-                </div>
-              </div>
-            </section>
-
-            {/* Address */}
-            <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-semibold mb-6 text-foreground">Address</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Country <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.country} 
-                    onChange={e => setForm({...form, country: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">State <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.state} 
-                    onChange={e => setForm({...form, state: e.target.value})}
-                    placeholder="Select a state"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Address Line 1 <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.addressLine1} 
-                    onChange={e => setForm({...form, addressLine1: e.target.value})}
-                    placeholder="ADDRESS LINE 1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Address Line 2</label>
-                  <Input 
-                    value={form.addressLine2} 
-                    onChange={e => setForm({...form, addressLine2: e.target.value})}
-                    placeholder="ADDRESS LINE 2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">City <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.city} 
-                    onChange={e => setForm({...form, city: e.target.value})}
-                    placeholder="CITY"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Pincode <span className="text-red-500">*</span></label>
-                  <Input 
-                    value={form.pincode} 
-                    onChange={e => setForm({...form, pincode: e.target.value})}
-                    placeholder="PINCODE (6 DIGITS)"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Bank Details */}
-            <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-semibold mb-6 text-foreground">Bank Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bank Name</label>
-                  <Input 
-                    value={form.bankName} 
-                    onChange={e => setForm({...form, bankName: e.target.value})}
-                    placeholder="BANK NAME"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Account Number</label>
-                  <Input 
-                    value={form.accountNumber} 
-                    onChange={e => setForm({...form, accountNumber: e.target.value})}
-                    placeholder="ACCOUNT NUMBER (9-18 DIGITS)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">IFSC Code</label>
-                  <Input 
-                    value={form.ifscCode} 
-                    onChange={e => setForm({...form, ifscCode: e.target.value})}
-                    placeholder="IFSC CODE (E.G., SBIN0001234)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Account Holder Name</label>
-                  <Input 
-                    value={form.accountHolderName} 
-                    onChange={e => setForm({...form, accountHolderName: e.target.value})}
-                    placeholder="ACCOUNT HOLDER NAME"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Opening Balance & Settings */}
-            <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-semibold mb-6 text-foreground">Opening Balance & Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Opening Balance <span className="text-red-500">*</span></label>
-                  <Input 
-                    type="number"
-                    value={form.openingBalance} 
-                    onChange={e => setForm({...form, openingBalance: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Balance Type <span className="text-red-500">*</span></label>
-                  <select 
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={form.balanceType}
-                    onChange={e => setForm({...form, balanceType: e.target.value})}
-                  >
-                    <option value="CREDIT">CREDIT</option>
-                    <option value="DEBIT">DEBIT</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Credit Period (Days) <span className="text-red-500">*</span></label>
-                  <Input 
-                    type="number"
-                    value={form.creditPeriodDays} 
-                    onChange={e => setForm({...form, creditPeriodDays: e.target.value})}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Pricing Margins */}
-            <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-semibold mb-2 text-foreground">Pricing Margins (%)</h3>
-              <p className="text-sm text-muted-foreground mb-6">Specify default margin percentages for different consumer roles.</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                {MARGIN_FIELDS.map(field => (
-                  <div key={field.key} className="space-y-2">
-                    <label className="text-sm font-medium">{field.label}</label>
-                    <Input 
-                      type="number"
-                      value={form[field.key]} 
-                      onChange={e => setForm({...form, [field.key]: e.target.value})}
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
-
-          </div>
-
-          <DialogFooter className="p-4 border-t border-border bg-card sticky bottom-0 z-10">
-            <div className="flex w-full justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowForm(false)}>
+          <DialogHeader className="p-4 border-b border-border sticky top-0 bg-card z-10 flex flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="shrink-0 -ml-2">
+                <Icon name="arrow-left" size={20} />
+              </Button>
+              <DialogTitle className="text-base font-bold">
+                {editingSupplier ? `Edit Supplier: ${editingSupplier.companyName}` : "Add Supplier"}
+              </DialogTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowForm(false)} className="h-8 text-xs font-semibold">
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
-                {editingSupplier ? "Save Changes" : "Save Supplier"}
+              <Button size="sm" onClick={handleSubmit} className="bg-rose-600 hover:bg-rose-700 text-white h-8 text-xs font-semibold">
+                {editingSupplier ? "Update Supplier" : "Save Supplier"}
               </Button>
             </div>
-          </DialogFooter>
+          </DialogHeader>
+
+          <div className="p-6 space-y-5 bg-background">
+            {/* Row 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Company Name <span className="text-red-500">*</span></label>
+                <Input value={form.companyName} onChange={e => setForm({...form, companyName: e.target.value})} placeholder="Company Name" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Contact Person <span className="text-red-500">*</span></label>
+                <Input value={form.contactName} onChange={e => setForm({...form, contactName: e.target.value})} placeholder="Contact Person" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">GSTIN</label>
+                <Input value={form.gstin} onChange={e => setForm({...form, gstin: e.target.value})} placeholder="GSTIN" className="h-9 text-sm uppercase" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Email</label>
+                <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="EMAIL@EXAMPLE.COM" className="h-9 text-sm uppercase" />
+              </div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Phone Number <span className="text-red-500">*</span></label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 border border-r-0 border-input bg-muted text-muted-foreground text-sm rounded-l-md h-9">+91</span>
+                  <Input className="rounded-l-none h-9 text-sm" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="9876543210" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Phone Number 2</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 border border-r-0 border-input bg-muted text-muted-foreground text-sm rounded-l-md h-9">+91</span>
+                  <Input className="rounded-l-none h-9 text-sm" value={form.phone2} onChange={e => setForm({...form, phone2: e.target.value})} placeholder="9876543210" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Status <span className="text-red-500">*</span></label>
+                <select className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.status ? "Active" : "Inactive"} onChange={e => setForm({...form, status: e.target.value === "Active"})}>
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Credit Period (Days) <span className="text-red-500">*</span></label>
+                <Input type="number" value={form.creditPeriodDays} onChange={e => setForm({...form, creditPeriodDays: e.target.value})} className="h-9 text-sm" />
+              </div>
+            </div>
+
+            {/* Row 3 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Address Line 1 <span className="text-red-500">*</span></label>
+                <Input value={form.addressLine1} onChange={e => setForm({...form, addressLine1: e.target.value})} placeholder="ADDRESS LINE 1" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Address Line 2</label>
+                <Input value={form.addressLine2} onChange={e => setForm({...form, addressLine2: e.target.value})} placeholder="ADDRESS LINE 2 (OPTIONAL)" className="h-9 text-sm uppercase" />
+              </div>
+            </div>
+
+            {/* Row 4 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">City <span className="text-red-500">*</span></label>
+                <Input value={form.city} onChange={e => setForm({...form, city: e.target.value})} placeholder="CITY" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">State <span className="text-red-500">*</span></label>
+                <Input value={form.state} onChange={e => setForm({...form, state: e.target.value})} placeholder="STATE" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Pincode <span className="text-red-500">*</span></label>
+                <Input value={form.pincode} onChange={e => setForm({...form, pincode: e.target.value})} placeholder="PINCODE" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Country <span className="text-red-500">*</span></label>
+                <Input value={form.country} onChange={e => setForm({...form, country: e.target.value})} placeholder="COUNTRY" className="h-9 text-sm uppercase" />
+              </div>
+            </div>
+
+            {/* Row 5 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Bank Name</label>
+                <Input value={form.bankName} onChange={e => setForm({...form, bankName: e.target.value})} placeholder="BANK NAME" className="h-9 text-sm uppercase" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Account Number</label>
+                <Input value={form.accountNumber} onChange={e => setForm({...form, accountNumber: e.target.value})} placeholder="ACCOUNT NUMBER" className="h-9 text-sm uppercase" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">IFSC Code</label>
+                <Input value={form.ifscCode} onChange={e => setForm({...form, ifscCode: e.target.value})} placeholder="IFSC CODE" className="h-9 text-sm uppercase" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Account Holder Name</label>
+                <Input value={form.accountHolderName} onChange={e => setForm({...form, accountHolderName: e.target.value})} placeholder="ACCOUNT HOLDER NAME" className="h-9 text-sm uppercase" />
+              </div>
+            </div>
+
+            {/* Row 6 */}
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Opening Bal. <span className="text-red-500">*</span></label>
+                <Input type="number" value={form.openingBalance} onChange={e => setForm({...form, openingBalance: e.target.value})} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground">Bal. Type <span className="text-red-500">*</span></label>
+                <select className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.balanceType} onChange={e => setForm({...form, balanceType: e.target.value})}>
+                  <option value="CREDIT">CREDIT</option>
+                  <option value="DEBIT">DEBIT</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis">Dealer Margin (%)</label>
+                <Input type="number" value={form.dealerMargin} onChange={e => setForm({...form, dealerMargin: e.target.value})} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis">Wholesale Margin (%)</label>
+                <Input type="number" value={form.wholesalerMargin} onChange={e => setForm({...form, wholesalerMargin: e.target.value})} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis">Retail Margin (%)</label>
+                <Input type="number" value={form.retailMargin} onChange={e => setForm({...form, retailMargin: e.target.value})} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis">Parlour Margin (%)</label>
+                <Input type="number" value={form.parlourMargin} onChange={e => setForm({...form, parlourMargin: e.target.value})} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis">Online Margin (%)</label>
+                <Input type="number" value={form.onlineMargin} onChange={e => setForm({...form, onlineMargin: e.target.value})} className="h-9 text-sm" />
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 export default function WarehousesPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -185,11 +185,7 @@ export default function WarehousesPage() {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />
-          ))}
-        </div>
+        <LoadingAnimation type="table" />
       ) : (
         <DataTable
           columns={columns}

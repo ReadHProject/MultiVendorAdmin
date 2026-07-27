@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 const STATUS_OPTIONS = ["", "PENDING", "IN_TRANSIT", "COMPLETED", "CANCELLED"];
 const STATUS_VARIANT = {
   PENDING: "warning",
@@ -92,11 +92,7 @@ function TransfersPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-12 bg-muted animate-pulse rounded-lg" />
-          ))}
-        </div>
+        <LoadingAnimation type="table" />
       ) : (
         <DataTable columns={columns} data={items} empty="No transfers found" />
       )}

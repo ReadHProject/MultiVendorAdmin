@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { MobileFooter, MobileHeader } from "@/components/admin/mobile/mobile-layout";
 import { Icon } from "@/components/ui/icon";
 import { Plus } from "lucide-react";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 const ROLE_FILTERS = [
   { value: "", label: "All Roles" },
   { value: "ADMIN", label: "ADMIN" },
@@ -327,11 +327,7 @@ export default function UsersPage() {
           )}
 
           {loading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
+            <LoadingAnimation type="table" />
           ) : (
             <>
               <DataTable columns={columns} data={items} empty="No users found" />
@@ -389,11 +385,7 @@ export default function UsersPage() {
           )}
 
           {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-24 bg-slate-900 animate-pulse rounded-custom" />
-              ))}
-            </div>
+            <LoadingAnimation type="card" />
           ) : items.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm">No users found</div>
           ) : (

@@ -41,7 +41,7 @@ function LoginForm() {
         if (isAdmin) {
           router.push("/admin");
         } else {
-          window.location.href = `http://localhost:3000/account/dashboard?token=${data.accessToken}`;
+          window.location.href = `${process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"}/account/dashboard?token=${data.accessToken}`;
         }
       }
     } catch (err) {

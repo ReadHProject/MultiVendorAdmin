@@ -15,7 +15,7 @@ import { MobileFooter, MobileHeader } from "@/components/admin/mobile/mobile-lay
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 export default function PurchaseOrdersPage() {
   const router = useRouter();
   
@@ -301,11 +301,7 @@ export default function PurchaseOrdersPage() {
         )}
 
         {loading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
+          <LoadingAnimation type="table" />
         ) : (
           <>
             <DataTable columns={columns} data={items} empty="No purchase orders found" />
@@ -478,11 +474,7 @@ export default function PurchaseOrdersPage() {
           )}
 
           {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-24 bg-slate-900 animate-pulse rounded-custom" />
-              ))}
-            </div>
+            <LoadingAnimation type="card" />
           ) : items.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm">No purchase orders found</div>
           ) : (
