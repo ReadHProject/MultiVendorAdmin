@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getStorefrontUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -120,35 +120,15 @@ export default function UsersPage() {
     }
     setEditing(true);
     try {
-      // Need to handle role update separately since the endpoint for update might not handle role relations if implemented via userUpdateSchema, but let's check:
-      // userUpdateSchema has role omitted? No, userUpdateSchema is userCreateSchema.partial().omit({ password: true }). So it accepts role.
-      // Wait, backend router put("/:id") does data: req.body.
-      // But role is created via relation. Prisma will throw error if we pass string role directly to data: req.body because it's expecting a relation in DB for roles, but the schema has role: z.string().
-      // Actually backend put("/:id") doesn't handle role relation updates in data: req.body. Let's look at the put API carefully.
-      // It does `data: req.body`. `req.body` has `role` because we pass it. Prisma `User` model doesn't have `role` field directly, it has `roles` relation. So it will fail!
-      // I should update user details and then update role separately.
       const payload = {
         email: editForm.email,
         mobile: editForm.mobile,
         businessName: editForm.businessName,
         stateCode: editForm.stateCode,
         gstNumber: editForm.gstNumber,
+        role: editForm.role,
       };
       await api.put(`/users/${editForm.id}`, payload);
-
-      // Update role if changed
-      if (editForm.originalRole !== editForm.role) {
-        if (editForm.originalRole) {
-          // We need originalRoleId to delete, but we might not have it. The API provides POST /:id/roles and DELETE /:id/roles/:roleId.
-          // Since we can't easily fetch roleId without fetching all roles, a simpler way is to just let the backend handle it if they modify it, but if we can't we might just add it.
-          // Actually, the prompt says "Role (required)". So we might just call POST /:id/roles.
-          try {
-            await api.post(`/users/${editForm.id}/roles`, { role: editForm.role });
-          } catch (e) {
-            console.error("Failed to update role", e);
-          }
-        }
-      }
 
       setShowEdit(false);
       setEditForm(null);
@@ -234,9 +214,28 @@ export default function UsersPage() {
     },
     {
       header: "Actions",
-      className: "text-center w-[150px]",
+      className: "text-center w-[220px]",
       cell: (row) => (
         <div className="flex gap-2 justify-end">
+          <Button
+            size="sm"
+            title="Login as user in Storefront"
+            onClick={async () => {
+              try {
+                const res = await api.post("/login-as", { targetUserId: row.id, reason: "Admin Storefront Inspection" });
+                const token = res.impersonationToken;
+                if (token) {
+                  const targetUrl = getStorefrontUrl(`/account/dashboard?token=${token}`);
+                  window.open(targetUrl, "_blank");
+                }
+              } catch (err) {
+                alert(err.message || "Failed to login as user");
+              }
+            }}
+            className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            Storefront
+          </Button>
           <Button
             size="sm"
             onClick={() => {
